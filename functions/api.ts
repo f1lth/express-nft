@@ -29,9 +29,6 @@ router.get('/', (req, res) => {
     res.send('Express API for Milady NFTs');
 });
 
-router.get('/hello', (req, res) => res.send('Hello World!'));
-
-
 router.post('/createUser', (req, res) => {
     const token = generateAccessToken(String(req.body.username));
     res.json({"access_token": token});
