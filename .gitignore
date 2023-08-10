@@ -1,3 +1,3 @@
 // add node modules to git ignore
 
-node_modules
+node_modules/
