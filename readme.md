@@ -37,8 +37,8 @@ cp .env.example .env
 npm run start
 ```
 
-## Deploy
+## Build
 
 This server is deployed to [Netlify](https://www.netlify.com/).
 ```bash
-tsc -p .```
+npm run build```

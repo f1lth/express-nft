@@ -13,7 +13,8 @@ import { authenticateToken, generateAccessToken } from './scripts/auth';
  * 
  * call like this:
  * >curl localhost:3000/createUser //get your JWT_TOKEN here first
- * >curl localhost:3000/collection_data --Header 'Authorization: Bearer JWT_TOKEN' */
+ * >curl localhost:3000/collection_data --Header 'Authorization: Bearer JWT_TOKEN' 
+ */
 
 const app = express();
 const compression = require('compression');
