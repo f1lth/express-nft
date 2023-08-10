@@ -40,6 +40,8 @@ cp .env.example .env
 npm run start
 ```
 
+4. Navigate to localhost:3000/.netlify/functions/api
+
 ## Build
 
 This server is deployed to [Netlify](https://paragon-express-nft-f1lth.netlify.app/.netlify/functions/api).

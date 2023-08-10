@@ -58,4 +58,8 @@ router.get("/token_data", authenticateToken, async (req, res) => {
 
 app.use('/.netlify/functions/api', router);
 
+app.listen(3000, () => {
+    console.log('App listening on port 3000!');
+});
+
 module.exports.handler = serverless(app);
