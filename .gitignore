@@ -1,3 +1,5 @@
 // add node modules to git ignore
 
 node_modules/
+# Local Netlify folder
+.netlify
