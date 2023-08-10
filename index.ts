@@ -1,12 +1,19 @@
 import express from 'express';
-import jwt, { JwtPayload, Secret } from "jsonwebtoken";
-import { getFloorPriceOverTime, 
-        getCurrentOwner, 
-        getTokenSales, 
-        getAllTokens, 
-        getAllData
-        } from './scripts/scrape';
-import { authenticateToken, generateAccessToken} from './scripts/auth';
+import { getAllData, getTokenData } from './scripts/scrape';
+import { authenticateToken, generateAccessToken } from './scripts/auth';
+
+/**
+ * Backend Engineering Task : Analysing an Existing NFT Collection
+ *  - Created a new Express API that will return the data from the collection
+ *  - 2 data endpoints and one to generate a JWT token:
+ *      
+ *     - /collection_data
+ *     - /token_data
+ *     - /createUser
+ * 
+ * call like this:
+ * >curl localhost:3000/createUser //get your JWT_TOKEN here first
+ * >curl localhost:3000/collection_data --Header 'Authorization: Bearer JWT_TOKEN' */
 
 const app = express();
 
@@ -21,40 +28,12 @@ app.post('/createUser', (req, res) => {
     res.json({"access_token": token});
 });
 
-
-app.get("/floor", async (req, res) => {
+// protected api endpoint
+app.get("/collection_data", authenticateToken, async (req, res) => {
+    const limit = Number(req.query.limit) || 100;
     try {
-        const data = await getFloorPriceOverTime(); // Await the scrape function call
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: "An error occurred" });
-    }
-    
-});
-
-app.get("/current_owner", async (req, res) => {
-    const token_id = req.query.token_id as string;
-    try {
-        const data = await getCurrentOwner(token_id); // Await the scrape function call
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: "An error occurred" });
-    }
-});
-
-app.get("/owner_history", async (req, res) => {
-    const token_id = req.query.token_id as string;
-    try {
-        const data = await getTokenSales(token_id); // Await the scrape function call
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: "An error occurred" });
-    }
-});
-
-app.get("/tokens", async (req, res) => {
-    try {
-        const data = await getAllTokens(); // Await the scrape function call
+        const data = await getAllData(limit); // Await the scrape function call
+        console.log('here in main', data);
         return res.status(200).json({data});
     } catch (error) {
         res.status(500).json({ error: "An error occurred" });
@@ -62,9 +41,10 @@ app.get("/tokens", async (req, res) => {
 });
 
 // protected api endpoint
-app.get("/data", authenticateToken, async (req, res) => {
+app.get("/token_data", authenticateToken, async (req, res) => {
+    const token_id = String(req.query.token_id)
     try {
-        const data = await getAllData(); // Await the scrape function call
+        const data = await getTokenData(token_id); // Await the scrape function call
         return res.status(200).json({data});
     } catch (error) {
         res.status(500).json({ error: "An error occurred" });

@@ -3,7 +3,10 @@ require('dotenv').config();
 const { TRANSPOSE_API_KEY } = process.env;
 const MILADY_CONTRACT = "0x5af0d9827e0c53e4799bb226655a1de152a425a5"
 
-// NFT queries for the Milady Maker project
+/* 
+    * Get the raw floor prices for each day
+    * @return {Object} data 
+**/
 export function getFloorPriceOverTime() {
     return new Promise((resolve, reject) => {
         const https = require('https');
@@ -37,7 +40,12 @@ export function getFloorPriceOverTime() {
         req.end();
     });
 };
-  
+
+/*
+    * Get the current owner of the token given a token ID
+    * @param {String} tokenId
+    * @return {Object} data
+**/
 export function getCurrentOwner(tokenId: string) {
     return new Promise((resolve, reject) => {
         const https = require('https');
@@ -71,7 +79,12 @@ export function getCurrentOwner(tokenId: string) {
         req.end();
     });
 };
-  
+
+/*
+    * Get the sales history for the token given a token ID
+    * @param {String} tokenId
+    * @return {Object} data
+**/
 export function getTokenSales(tokenId: string) {
     return new Promise((resolve, reject) => {
         const https = require('https');
@@ -106,14 +119,19 @@ export function getTokenSales(tokenId: string) {
     });
 };
   
-
-export async function getAllTokens() {
+/* 
+    Get the data on the first 0-limit nfts in the collection 
+    @param {Number} limit 
+    @return {Object} data
+**/
+export async function getAllTokens(limit: number) {
     return new Promise((resolve, reject) => {
         const https = require('https');
         const querystring = require('querystring');
         const params = {
           chain_id: "ethereum",
           contract_address: MILADY_CONTRACT,
+          limit: limit
         }
         var options = {
             hostname: 'api.transpose.io',
@@ -140,39 +158,157 @@ export async function getAllTokens() {
       });
 };
 
-export async function getAllData() {
-
-    console.log('inside get all data')
-
-    const token_ids : any = await getAllTokens()
-    const parsed = JSON.parse(token_ids)
-
-    const stats = parsed.results
-    const metadata : any = {
-        "description": stats[0]?.description,
-        "example_png": stats[0]?.image_url,
-        "contract_address": stats[0]?.contract_address,
-        "last_refreshed": stats[0]?.last_refreshed,
-    }
-
-    // map over all token ids and get the data
-    const tokenData = await Promise.all(stats.map(async (token: any) => {
-        const tokenId = token.token_id
-        console.log(tokenId)
-        const sales : any = await getTokenSales(tokenId)
-        const owner : any = await getCurrentOwner(tokenId)
-        const parsedSales = JSON.parse(sales)
-        const parsedOwner = JSON.parse(owner)
-        const salesData = parsedSales.results
-        const ownerData = parsedOwner.results
-        const tokenData = {
-            "token_id": tokenId,
-            "sales": salesData,
-            "owner": ownerData,
+/*
+    * Get the current price of ETH in USD for today
+    * @return {String} price
+**/
+export async function getEthPriceToday() {
+    return new Promise((resolve, reject) => {
+        const https = require('https');
+        const querystring = require('querystring');
+        // defaults to current time if no timestamp **
+        const params = {
+            chain_id: "ethereum",
         }
-        return tokenData
+        var options = {
+            hostname: 'api.transpose.io',
+            path: '/prices/price?' + querystring.stringify(params),
+            method: 'GET',
+            headers: {
+                'X-API-KEY': TRANSPOSE_API_KEY
+            }
+        };
+        var req = https.request(options, (res: any) => {
+            console.log('Credits charged:', res.headers['x-credits-charged']);
+            let data = '';
+            res.on('data', (chunk: any) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                resolve(data);
+            });
+        });
+        req.on('error', (e: any) => {
+            reject(e);
+        });
+        req.end();
+      });
+}
+
+/*
+    * Get and group data and perform calculations 
+    * @param {Number} limit
+    * @return {Object} data
+**/
+export async function getAllData(limit: number) {
+    // Get eth price for later calcs
+    const ethPrice : any = await getEthPriceToday()
+    const ethPriceParse = JSON.parse(ethPrice)
+    const ethPriceNumeric = ethPriceParse?.results[0]?.price;
+
+    // get the floor price data from mint date
+    const floorPrices : any = await getFloorPriceOverTime()
+    const floorPriceParse = JSON.parse(floorPrices)
+    const floorPriceArray = floorPriceParse?.results;
+
+    // variables to hold the calculations
+    var dailyAverage = 0;
+    var weeklyAverage = 0;
+    var monthlyAverage = 0;
+    var ninetyDayAverage = 0;
+    var allTimeAverage = 0;
+    var sum = 0;
+
+    // Calculate average prices
+    floorPriceArray?.reverse().slice(0, floorPriceArray?.length).forEach((sample: any, index: any) => {
+        
+        sum += sample.floor_price;
+        switch (index) {
+            case 0:
+                dailyAverage = sample.floor_price;
+                break;
+            case 6:
+                weeklyAverage = sum / 7;
+                break;
+            case 29:
+                monthlyAverage = sum / 30;
+                break;
+            case 89:
+                ninetyDayAverage = sum / 90;
+                break;
+            case floorPriceArray?.length - 1:
+                allTimeAverage = sum / floorPriceArray?.length;
+                break;
+        };
+    });
+    
+    console.log("Daily Average Price:", dailyAverage);
+    console.log("Weekly Average Price:", weeklyAverage);
+    console.log("Monthly Average Price:", monthlyAverage);
+    console.log("90-day Average Price:", ninetyDayAverage);
+    console.log("All time Average Price:", allTimeAverage);
+
+    // get the token metadata
+    const tokens : any = await getAllTokens(limit)
+    const tokensParsed = JSON.parse(tokens)
+    const token_stats = tokensParsed?.results
+
+    const metadata : any = {
+        "description": token_stats[0]?.description,
+        "example_png": token_stats[0]?.image_url,
+        "contract_address": token_stats[0]?.contract_address,
+        "last_refreshed": token_stats[0]?.last_refreshed,
+        // not normalized over time but didn't want to burn extra credits lol
+        "floor_prices": {
+            "daily": {
+                "USD": dailyAverage,
+                "ETH": dailyAverage / ethPriceNumeric,
+            }, 
+            "weekly": {
+                "USD": weeklyAverage,
+                "ETH": weeklyAverage / ethPriceNumeric,
+            },
+            "monthly": {
+                "USD": monthlyAverage,
+                "ETH": monthlyAverage / ethPriceNumeric,
+            },
+            "90-day": {
+                "USD": ninetyDayAverage,
+                "ETH": ninetyDayAverage / ethPriceNumeric,
+            },
+            "all-time": {
+                "USD": allTimeAverage,
+                "ETH": allTimeAverage / ethPriceNumeric,
+            },
+        },
+        "collection_data": token_stats,
     }
 
+    console.log(metadata);
+    return metadata;
+};
+
+/*
+    * Get the information of a given token id in the collection
+    * @param {String} id
+    * @return {Object} data
+**/
+export async function getTokenData(id: string) {
+    // get current owner
+    const owner : any = await getCurrentOwner(id);
+    const ownerParsed = JSON.parse(owner);
+
+    // get past history
+    const history : any = await getTokenSales(id);
+    const historyParsed = JSON.parse(history);
     
-    ))
+    const metadata : any = {
+        "token_id": id,
+        "current_owner": ownerParsed?.results[0]?.owner,
+        "number_previous_owners": historyParsed?.results?.length,
+        "previous_owners": historyParsed?.results,
+    };
+
+    console.log(metadata);
+    return metadata;
 }
