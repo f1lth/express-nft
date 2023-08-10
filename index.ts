@@ -16,8 +16,10 @@ import { authenticateToken, generateAccessToken } from './scripts/auth';
  * >curl localhost:3000/collection_data --Header 'Authorization: Bearer JWT_TOKEN' */
 
 const app = express();
+const compression = require('compression');
 
 app.use(express.json());
+app.use(compression()); // Compress all routes
 
 app.get('/', (req, res) => {
     res.send('Express API for Milady NFTs');
