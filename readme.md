@@ -1,20 +1,22 @@
 # ParagonsDAO Express Server
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/c15a0031-6cd1-455e-8498-960b85e08232/deploy-status)](https://app.netlify.com/sites/paragon-express-nft-f1lth/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/c15a0031-6cd1-455e-8498-960b85e08232/deploy-status)](https://paragon-express-nft-f1lth.netlify.app/.netlify/functions/api)
+
+[Live Demo](https://paragon-express-nft-f1lth.netlify.app/.netlify/functions/api)
 
 ## Endpoints
 There are 3 main endpoints: 
-- `/createUser` - returns a JWT token for a new user
+- `/createUser` - returns a JWT token for a new user (which you must call first)
 - `/collection_data` - returns data from the popular nft collection Milady Maker
-- `/token_data` - returns data for a specific token id
+- `/token_data?token_id=1234` - returns data for a specific token id, ex: 1234
   
 Example: 
-```bash
-curl localhost:3000/createUser
+```bash 
+curl -X POST https://paragon-express-nft-f1lth.netlify.app/.netlify/functions/api/createUser
 ```
 Example: 
 ```bash
-curl localhost:3000/collection_data --Header 'Authorization: Bearer JWT_TOKEN'
+curl https://paragon-express-nft-f1lth.netlify.app/.netlify/functions/api/collection_data --Header 'Authorization: Bearer JWT_TOKEN'
 ```
 
 ## Installation
@@ -39,6 +41,6 @@ npm run start
 
 ## Build
 
-This server is deployed to [Netlify](https://www.netlify.com/).
+This server is deployed to [Netlify](https://paragon-express-nft-f1lth.netlify.app/.netlify/functions/api).
 ```bash
 npm run build```

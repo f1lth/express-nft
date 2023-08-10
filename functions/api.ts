@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
-import { getAllData, getTokenData } from './scripts/scrape';
-import { authenticateToken, generateAccessToken } from './scripts/auth';
+import { getAllData, getTokenData } from '../scripts/scrape';
+import { authenticateToken, generateAccessToken } from '../scripts/auth';
 
 /**
  * Backend Engineering Task : Analysing an Existing NFT Collection
@@ -20,11 +20,10 @@ const compression = require('compression');
 const serverless = require('serverless-http');
 
 const app = express();
-
 const router = Router();
 
-app.use(express.json());
 app.use(compression()); // Compress all routes
+app.use(express.json()); // for parsing application/json
 
 router.get('/', (req, res) => {
     res.send('Express API for Milady NFTs');
@@ -34,7 +33,7 @@ router.get('/hello', (req, res) => res.send('Hello World!'));
 
 
 router.post('/createUser', (req, res) => {
-    const token = generateAccessToken(req.body.username as string);
+    const token = generateAccessToken(String(req.body.username));
     res.json({"access_token": token});
 });
 
@@ -43,7 +42,6 @@ router.get("/collection_data", authenticateToken, async (req, res) => {
     const limit = Number(req.query.limit) || 100;
     try {
         const data = await getAllData(limit); // Await the scrape function call
-        console.log('here in main', data);
         return res.status(200).json({data});
     } catch (error) {
         res.status(500).json({ error: "An error occurred" });
@@ -61,10 +59,6 @@ router.get("/token_data", authenticateToken, async (req, res) => {
     }
 });
 
-app.use('/api/', router);
+app.use('/.netlify/functions/api', router);
 
-app.listen(3000, () => {
-    console.log('The application is listening on port 3000!');
-});
-
-export const handler = serverless(app);
+module.exports.handler = serverless(app);
