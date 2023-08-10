@@ -12,8 +12,8 @@ import { authenticateToken, generateAccessToken } from '../scripts/auth';
  *     - /createUser
  * 
  * call like this:
- * >curl localhost:3000/createUser //get your JWT_TOKEN here first
- * >curl localhost:3000/collection_data --Header 'Authorization: Bearer JWT_TOKEN' 
+ * >curl -X POST localhost:3000/.netlify/functions/api/createUser -H "Content-Type: application/json" -d '{"username": "paragon_admin"}'
+ * >curl localhost:3000/.netlify/functions/api/collection_data --Header 'Authorization: Bearer JWT_TOKEN' 
  */
 
 const compression = require('compression');
