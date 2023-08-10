@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { getAllData, getTokenData } from './scripts/scrape';
 import { authenticateToken, generateAccessToken } from './scripts/auth';
 
@@ -16,23 +16,30 @@ import { authenticateToken, generateAccessToken } from './scripts/auth';
  * >curl localhost:3000/collection_data --Header 'Authorization: Bearer JWT_TOKEN' 
  */
 
-const app = express();
 const compression = require('compression');
+const serverless = require('serverless-http');
+
+const app = express();
+
+const router = Router();
 
 app.use(express.json());
 app.use(compression()); // Compress all routes
 
-app.get('/', (req, res) => {
+router.get('/', (req, res) => {
     res.send('Express API for Milady NFTs');
 });
 
-app.post('/createUser', (req, res) => {
+router.get('/hello', (req, res) => res.send('Hello World!'));
+
+
+router.post('/createUser', (req, res) => {
     const token = generateAccessToken(req.body.username as string);
     res.json({"access_token": token});
 });
 
 // protected api endpoint
-app.get("/collection_data", authenticateToken, async (req, res) => {
+router.get("/collection_data", authenticateToken, async (req, res) => {
     const limit = Number(req.query.limit) || 100;
     try {
         const data = await getAllData(limit); // Await the scrape function call
@@ -44,7 +51,7 @@ app.get("/collection_data", authenticateToken, async (req, res) => {
 });
 
 // protected api endpoint
-app.get("/token_data", authenticateToken, async (req, res) => {
+router.get("/token_data", authenticateToken, async (req, res) => {
     const token_id = String(req.query.token_id)
     try {
         const data = await getTokenData(token_id); // Await the scrape function call
@@ -54,9 +61,10 @@ app.get("/token_data", authenticateToken, async (req, res) => {
     }
 });
 
+app.use('/api/', router);
 
 app.listen(3000, () => {
     console.log('The application is listening on port 3000!');
 });
 
-
+export const handler = serverless(app);
